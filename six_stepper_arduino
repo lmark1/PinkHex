@@ -1,8 +1,8 @@
-/*     Simple Stepper Motor Control Exaple Code
- *      
- *  by Dejan Nedelkovski, www.HowToMechatronics.com
- *  
+
+/**
+ * @author PinkHex - Batinovic, Markovic, Mikic
  */
+
 // Stepper motor pins 
 const int stepper_1 = 3; 
 const int stepper_2 = 4;
@@ -14,14 +14,27 @@ const int stepper_6 = 12;
 // Direction pin numver
 const int dirPin = 2; 
 
+// Motor enable pin constant
 const int enablePin = 5;
 
+// Speed regulator pins
 const int MS1 = 6;
 const int MS2 = 7;
 const int MS3 = 8;
- 
+
+// Variables for recieving input via serial
+char last_action = 'k'; // Initial value is k = stop
+boolean newData = false;
+
+// Keyboard constants
+const char action_forward = 'i';
+const char action_stop = 'k';
+
 void setup() {
-  
+
+  Serial.begin(115200);
+  Serial.println("<Arduino is ready>");
+   
   // Sets the two pins as Outputs
   pinMode(stepper_1,OUTPUT);
   pinMode(stepper_2,OUTPUT);
@@ -48,15 +61,62 @@ void setup() {
 
 void loop() {
 
-  int motor_set_1[1] = { stepper_1, stepper_3, stepper_5 };
-  int motor_set_2[1] = { stepper_2, stepper_4, stepper_6 };
+  recieveOneChar();
+
+  // Check user input
+  if (last_action == action_stop) {
+    // Do nothing
+    
+  } else if(last_action == action_forward) {
+     goForward();
+  }
+
+  showNewData();
+}
+
+/**
+ * Go forward once.
+ */
+void goForward() {
   
-  runBackwardOnce(motor_set_1);
+  int motor_set_1[3] = { stepper_1, stepper_2, stepper_3 };
+  int motor_set_2[3] = { stepper_4, stepper_5, stepper_6 };
+  
+  runForwardOnce(motor_set_1, 3);
   delay(150);
   
-  runBackwardOnce(motor_set_2);
+  runForwardOnce(motor_set_2, 3);
   delay(150);
- 
+}
+
+/**
+ * Recieve one char from serial port.
+ */
+void recieveOneChar() {
+    if (Serial.available() > 0) {
+        char temp_char = Serial.read();
+
+        // Check if last recieved char is one of the available actions
+        if (
+          temp_char == action_forward || 
+          temp_char == action_stop) {
+           
+          last_action = temp_char;
+        }
+        
+        newData = true;
+    }
+}
+
+/**
+ * Print out recieved CHARACTER.
+ */
+char showNewData() {
+    if (newData == true) {
+        Serial.print("This just in ... ");
+        Serial.println(last_action);
+        newData = false;
+    }
 }
 
 /**
@@ -64,7 +124,7 @@ void loop() {
  * 
  * @motor_indices[] - int array with motor pin values
  */
-void runForwardOnce(int motor_indices[]) {
+void runForwardOnce(int motor_indices[], int size_of_array) {
   
   // Enables the motor to move in a particular direction
   digitalWrite(dirPin,HIGH); 
@@ -72,10 +132,10 @@ void runForwardOnce(int motor_indices[]) {
   // Makes 200 pulses for making one full cycle rotation
   for(int x = 0; x < 200; x++) {
     
-    enableMotors(motor_indices);
+    enableMotors(motor_indices, size_of_array);
     delayMicroseconds(500); 
     
-    disableMotors(motor_indices);
+    disableMotors(motor_indices, size_of_array);
     delayMicroseconds(500); 
   }
 }
@@ -86,7 +146,7 @@ void runForwardOnce(int motor_indices[]) {
  * 
  * @motor_indices[] - int array with motor pin values
  */
-void runBackwardOnce(int motor_indices[]) {
+void runBackwardOnce(int motor_indices[], int size_of_array) {
 
   //Changes the rotations direction
   digitalWrite(dirPin,LOW); 
@@ -94,10 +154,10 @@ void runBackwardOnce(int motor_indices[]) {
   // Makes 400 pulses for making two full cycle rotation
   for(int x = 0; x < 200; x++) {
     
-    enableMotors(motor_indices);
+    enableMotors(motor_indices, size_of_array);
     delayMicroseconds(500);
     
-    disableMotors(motor_indices);
+    disableMotors(motor_indices, size_of_array);
     delayMicroseconds(500);
   }
 }
@@ -107,12 +167,10 @@ void runBackwardOnce(int motor_indices[]) {
  * 
  * @motor_indices[] - int array with motor pin values
  */
-void enableMotors(int motor_indices[]) {
-  
-  int n = sizeof(motor_indices) / sizeof(motor_indices[0]);
+void enableMotors(int motor_indices[], int size_of_array) {
   int i;
-
-  for (i = 0; i < n; i++) {
+  
+  for (i = 0; i < size_of_array; i++) {
     digitalWrite(motor_indices[i], HIGH);
   }
 }
@@ -122,12 +180,10 @@ void enableMotors(int motor_indices[]) {
  * 
  * @motor_indices[] - int array with motor pin values
  */
-void disableMotors(int motor_indices[]) {
-  
-  int n = sizeof(motor_indices) / sizeof(motor_indices[0]);
+void disableMotors(int motor_indices[], int size_of_array) {
   int i;
-
-  for (i = 0; i < n; i++) {
+  
+  for (i = 0; i < size_of_array; i++) {
     digitalWrite(motor_indices[i], LOW);
   }
 }
