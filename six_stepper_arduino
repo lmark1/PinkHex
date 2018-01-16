@@ -29,6 +29,7 @@ boolean newData = false;
 // Keyboard constants
 const char action_forward = 'i';
 const char action_stop = 'k';
+const char action_backward = ',';
 
 void setup() {
 
@@ -63,16 +64,34 @@ void loop() {
 
   recieveOneChar();
 
-  // Check user input
+  // Check user input - do appropriate action
   if (last_action == action_stop) {
-    // Do nothing
+    // Do nothing... robot stops
     
-  } else if(last_action == action_forward) {
+  } else if (last_action == action_forward) {
      goForward();
+  
+  } else if (last_action == action_backward) {
+    goBackward();
   }
 
   showNewData();
 }
+
+/**
+ * Go backward once.
+ */
+void goBackward() {
+  int motor_set_1[3] = { stepper_1, stepper_2, stepper_3 };
+  int motor_set_2[3] = { stepper_4, stepper_5, stepper_6 };
+  
+  runBackwardOnce(motor_set_1, 3);
+  delay(150);
+  
+  runBackwardOnce(motor_set_2, 3);
+  delay(150);
+}
+
 
 /**
  * Go forward once.
@@ -99,7 +118,8 @@ void recieveOneChar() {
         // Check if last recieved char is one of the available actions
         if (
           temp_char == action_forward || 
-          temp_char == action_stop) {
+          temp_char == action_stop || 
+          temp_char == action_backward) {
            
           last_action = temp_char;
         }
@@ -109,11 +129,11 @@ void recieveOneChar() {
 }
 
 /**
- * Print out recieved CHARACTER.
+ * Print out recieved character.
  */
 char showNewData() {
     if (newData == true) {
-        Serial.print("This just in ... ");
+        Serial.print("Robot action: ");
         Serial.println(last_action);
         newData = false;
     }
