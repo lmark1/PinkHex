@@ -22,14 +22,39 @@ const int MS1 = 6;
 const int MS2 = 7;
 const int MS3 = 8;
 
-// Variables for recieving input via serial
-char last_action = 'k'; // Initial value is k = stop
-boolean newData = false;
-
 // Keyboard constants
 const char action_forward = 'i';
 const char action_stop = 'k';
 const char action_backward = ',';
+const char action_standup = 'w';
+const char action_sitdown = 's';
+
+// Define motor sets
+int motor_set_1[3] = { 
+    stepper_1, 
+    stepper_4, 
+    stepper_5 
+  };
+int motor_set_2[3] = { 
+    stepper_2, 
+    stepper_3, 
+    stepper_6 
+};
+int motor_set_all[6] = {
+    stepper_1,
+    stepper_2,
+    stepper_3,
+    stepper_4,
+    stepper_5,
+    stepper_6
+};
+
+// Define motor revolution constant
+int full_revolution_cycle = 200;
+
+// Variables for recieving input via serial
+char last_action = 'k'; // Initial value is k = stop
+boolean newData = false;
 
 void setup() {
 
@@ -63,18 +88,24 @@ void setup() {
 void loop() {
 
   recieveOneChar();
-
+  
   // Check user input - do appropriate action
   if (last_action == action_stop) {
     // Do nothing... robot stops
     
   } else if (last_action == action_forward) {
-     goForward();
+    goForward();
   
   } else if (last_action == action_backward) {
     goBackward();
+  
+  } else if (last_action == action_standup) {
+    standUp();
+  
+  } else if (last_action == action_sitdown) {
+    sitDown();
   }
-
+  
   showNewData();
 }
 
@@ -82,13 +113,11 @@ void loop() {
  * Go backward once.
  */
 void goBackward() {
-  int motor_set_1[3] = { stepper_1, stepper_2, stepper_3 };
-  int motor_set_2[3] = { stepper_4, stepper_5, stepper_6 };
   
-  runBackwardOnce(motor_set_1, 3);
+  runBackwardOnce(motor_set_1, 3, full_revolution_cycle);
   delay(150);
   
-  runBackwardOnce(motor_set_2, 3);
+  runBackwardOnce(motor_set_2, 3, full_revolution_cycle);
   delay(150);
 }
 
@@ -98,14 +127,31 @@ void goBackward() {
  */
 void goForward() {
   
-  int motor_set_1[3] = { stepper_1, stepper_2, stepper_3 };
-  int motor_set_2[3] = { stepper_4, stepper_5, stepper_6 };
-  
-  runForwardOnce(motor_set_1, 3);
+  runForwardOnce(motor_set_1, 3, full_revolution_cycle);
   delay(150);
   
-  runForwardOnce(motor_set_2, 3);
+  runForwardOnce(motor_set_2, 3, full_revolution_cycle);
   delay(150);
+}
+
+void standUp() {
+
+  // Do a quarter revolution forward
+  runForwardOnce(motor_set_all, 6, full_revolution_cycle / 4);
+  Serial.println("Stand up - started.");
+  
+  // Reset action
+  last_action = action_stop;
+}
+
+void sitDown() {
+  
+  // Do a quarter revolution backward
+  runBackwardOnce(motor_set_all, 6, full_revolution_cycle / 4);
+  Serial.println("Sit down - started.");
+
+  // Reset action
+  last_action = action_stop;
 }
 
 /**
@@ -114,16 +160,7 @@ void goForward() {
 void recieveOneChar() {
     if (Serial.available() > 0) {
         char temp_char = Serial.read();
-
-        // Check if last recieved char is one of the available actions
-        if (
-          temp_char == action_forward || 
-          temp_char == action_stop || 
-          temp_char == action_backward) {
-           
-          last_action = temp_char;
-        }
-        
+        last_action = temp_char;       
         newData = true;
     }
 }
@@ -142,15 +179,20 @@ char showNewData() {
 /**
  * Run forward selected motors.
  * 
- * @motor_indices[] - int array with motor pin values
+ * motor_indices[] - int array with motor pin values
+ * size_of_array - size of motor indices array
+ * revolution_cycle - number of revolutions - 200 for full cycle
  */
-void runForwardOnce(int motor_indices[], int size_of_array) {
+void runForwardOnce(
+  int motor_indices[], 
+  int size_of_array, 
+  int revolution_cycle) {
   
   // Enables the motor to move in a particular direction
   digitalWrite(dirPin,HIGH); 
   
   // Makes 200 pulses for making one full cycle rotation
-  for(int x = 0; x < 200; x++) {
+  for(int x = 0; x < revolution_cycle; x++) {
     
     enableMotors(motor_indices, size_of_array);
     delayMicroseconds(500); 
@@ -160,19 +202,23 @@ void runForwardOnce(int motor_indices[], int size_of_array) {
   }
 }
 
-
 /**
  * Run backward selected motors.
  * 
  * @motor_indices[] - int array with motor pin values
+ * size_of_array - size of motor indices array
+ * revolution_cycle - number of revolutions - 200 for full cycle
  */
-void runBackwardOnce(int motor_indices[], int size_of_array) {
+void runBackwardOnce(
+  int motor_indices[], 
+  int size_of_array,
+  int revolution_cycle) {
 
   //Changes the rotations direction
   digitalWrite(dirPin,LOW); 
   
   // Makes 400 pulses for making two full cycle rotation
-  for(int x = 0; x < 200; x++) {
+  for(int x = 0; x < revolution_cycle; x++) {
     
     enableMotors(motor_indices, size_of_array);
     delayMicroseconds(500);
