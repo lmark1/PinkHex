@@ -7,8 +7,8 @@ six_stepper.ino
 - pin locations and functions are documented in the source code
 
 keyboard2serial.py
-- this program should be run in parallel while aruduino is connected and running
-- it allows user to input commands from the keyboard which are sent to arduina via current serial port
+- this program should be executed while aruduino is connected and running
+- it allows user to input commands from the keyboard which are sent to Arduino via current serial port
 - if there are no available ports found (tty/ACM0 or tty/ACM1) program terminates with an error message
 
 Commands: 
